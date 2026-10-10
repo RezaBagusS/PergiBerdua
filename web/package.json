@@ -7,19 +7,24 @@
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port 3000",
     "typecheck": "tsc --noEmit",
+    "test:domain": "node --test tests/domain.test.mjs",
     "test:proxy": "node --test tests/proxy.test.mjs",
     "test:ui": "node tests/ui-smoke.mjs"
   },
   "dependencies": {
     "next": "^16.3.8",
+    "nodemailer": "^10.1.0",
+    "pg": "^8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "@playwright/test": "^1.58.2",
     "@types/node": "^22.0.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "@playwright/test": "^1.58.2"
+    "typescript": "^5.9.3"
   }
 }

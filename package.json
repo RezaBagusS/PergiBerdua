@@ -2,12 +2,15 @@
   "name": "pergiberdua-nextjs",
   "private": true,
   "version": "0.2.0",
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
     "setup": "node setup.mjs",
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
     "typecheck": "npm --prefix web run typecheck",
-    "test": "node --test api/test/domain.test.mjs",
+    "test": "node --test api/test/domain.test.mjs && npm --prefix web run test:domain && npm --prefix web run test:proxy",
     "test:integration": "node --test api/test/api.integration.mjs"
   }
 }

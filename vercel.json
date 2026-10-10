@@ -3,5 +3,11 @@
   "framework": "nextjs",
   "buildCommand": "npm --prefix web run build",
   "installCommand": "npm --prefix web install",
-  "outputDirectory": "web/.next"
+  "outputDirectory": "web/.next",
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "*/10 * * * *"
+    }
+  ]
 }
