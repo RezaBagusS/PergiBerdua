@@ -1,0 +1,13 @@
+{
+  "name": "pergiberdua-nextjs",
+  "private": true,
+  "version": "0.2.0",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "dev": "npm --prefix web run dev",
+    "build": "npm --prefix web run build",
+    "typecheck": "npm --prefix web run typecheck",
+    "test": "node --test api/test/domain.test.mjs",
+    "test:integration": "node --test api/test/api.integration.mjs"
+  }
+}

@@ -1,0 +1,6 @@
+# Start only dependencies: docker compose -f compose.yaml -f compose.dev.yaml up -d db mailpit api
+# Then: npm --prefix web install && npm --prefix web run dev
+services:
+  api:
+    ports:
+      - "127.0.0.1:3001:3000"
