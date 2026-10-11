@@ -116,14 +116,14 @@ Semua fitur di bawah ini sudah selesai diimplementasikan di kode basis (`api/` d
 #### Task 2.4: Penjadwalan Ulang Otomatis (Automatic Rescheduling)
 > Penanganan kencan dan reminder yang terlewat waktunya secara cerdas.
 
-- [ ] **Deteksi Jadwal Terlewat (*Missed Dates*)**:
-  - [ ] Worker terjadwal untuk mendeteksi agenda yang sudah melewati batas waktu tanpa ditandai *visited*.
-  - [ ] Status otomatis berubah menjadi `missed` / `needs_reschedule`.
-- [ ] **Saran Jadwal Ulang**:
-  - [ ] Notifikasi prompt interaktif ke kedua pasangan: "Kencan ini terlewat, mau dijadwalkan ulang?".
-  - [ ] Quick-action tombol "Jadwalkan Ulang" dengan pemilih tanggal/jam baru.
-- [ ] **Penyelarasan Worker Reminder**:
-  - [ ] Otomatis meregenerasi job pengingat (H-1 & H-2 jam) saat tanggal baru ditentukan.
+- [x] **Deteksi Jadwal Terlewat (*Missed Dates*)**:
+  - [x] Worker terjadwal dan query room otomatis mendeteksi agenda yang melewati batas waktu tanpa ditandai visited.
+  - [x] Status otomatis berubah menjadi `missed` dan mail job terlewat dibatalkan.
+- [x] **Saran Jadwal Ulang**:
+  - [x] Banner interaktif di dashboard tab rencana: "Ada rencana kencan yang terlewat, mau dijadwalkan ulang?".
+  - [x] Quick-action tombol "Jadwalkan ulang ↻" dan modal dengan waktu WIB baru.
+- [x] **Penyelarasan Worker Reminder**:
+  - [x] Otomatis meregenerasi job pengingat (H-1 & H-2 jam) saat tanggal baru ditentukan.
 
 ---
 

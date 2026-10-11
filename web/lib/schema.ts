@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS places (
  name text NOT NULL, area text NOT NULL DEFAULT '',
  category text NOT NULL DEFAULT 'Alam', budget integer NOT NULL DEFAULT 0,
  note text NOT NULL DEFAULT '', status text NOT NULL DEFAULT 'wish'
- CHECK(status IN ('wish','planned','visited')),
+ CHECK(status IN ('wish','planned','visited','missed')),
  scheduled_at timestamptz, visited_at timestamptz,
  created_by uuid NOT NULL REFERENCES users(id), created_at timestamptz NOT NULL DEFAULT now()
 );

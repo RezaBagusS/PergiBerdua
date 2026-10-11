@@ -46,6 +46,15 @@ export async function ensureDb(): Promise<void> {
     globalThis.__dbInitPromise = (async () => {
       try {
         await db.query(SCHEMA_SQL);
+        await db.query(`
+          DO $$
+          BEGIN
+            ALTER TABLE places DROP CONSTRAINT IF EXISTS places_status_check;
+            ALTER TABLE places ADD CONSTRAINT places_status_check CHECK(status IN ('wish','planned','visited','missed'));
+          EXCEPTION
+            WHEN OTHERS THEN NULL;
+          END $$;
+        `);
       } catch (err) {
         console.error('Failed to initialize database schema:', err);
         globalThis.__dbInitPromise = undefined;

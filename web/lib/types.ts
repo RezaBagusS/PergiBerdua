@@ -12,7 +12,7 @@ export interface Room {
 export interface Member {id: string; username: string; state: 'active' | 'archived'}
 export interface Place {
   id: string; room_id: string; name: string; area: string; category: Category;
-  budget: number; note: string; status: 'wish' | 'planned' | 'visited';
+  budget: number; note: string; status: 'wish' | 'planned' | 'visited' | 'missed';
   scheduled_at: string | null; visited_at: string | null; created_at: string;
 }
 export interface PlaceDraft {
@@ -28,7 +28,7 @@ export interface MeResponse {user: User; rooms: Room[]; notices: Notice[]}
 export interface RoomResponse {room: Room; members: Member[]; places: Place[]; jobs: MailJob[]}
 export interface Config {mode: 'development' | 'production'; email: string; whatsapp: boolean}
 export interface Invitation {url: string; code: string; expiresInHours: number}
-export type PlaceAction = 'schedule' | 'visited' | 'wish' | 'delete';
+export type PlaceAction = 'schedule' | 'reschedule' | 'visited' | 'wish' | 'delete';
 export type ModalState =
   | {kind: 'place'; place?: Place}
   | {kind: 'detail'; place: Place}

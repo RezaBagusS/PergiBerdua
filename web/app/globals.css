@@ -7,3 +7,11 @@
 @media(max-width:560px){.nudge{display:grid;grid-template-columns:25px minmax(0,1fr);align-items:start}.nudge>.text-button{grid-column:2;margin:0;justify-self:start;white-space:normal}.nudge>span{margin-top:0}.nudge p{line-height:1.65}}
 .global-error{position:fixed;left:50%;top:18px;transform:translateX(-50%);max-width:calc(100vw - 30px);width:max-content;background:#fff2f5;color:var(--danger);border:1px solid #d7b6c0;border-radius:10px;padding:14px 18px;box-shadow:0 8px 30px #31102a15;z-index:30;font-size:14px}.global-error button{margin-left:15px}.loading>div{max-width:600px;padding:30px}.loading p{margin:20px 0}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}.place-card:hover{transform:none}}
+.status.missed{background:#fff3ed;color:#b44d18;border:1px solid #f9d3bd}
+.notice.warning{background:#fdf4eb;border-left:3px solid #d97736;color:#7e431c}
+.reschedule-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fef6ee;border:1px solid #f6d8be;padding:16px 20px;border-radius:12px;margin:20px 0}
+.reschedule-banner>div{flex:1}
+.reschedule-banner strong{display:block;font-size:15px;color:#944618}
+.reschedule-banner p{font-size:14px;margin-top:4px;color:#7e431c}
+.reschedule-banner button{white-space:nowrap}
+

@@ -40,22 +40,25 @@ export default function ActionModal({modal,busy,error,readonly,close,open,action
     }
     case 'detail': {
       const p = modal.place; title = p.name;
+      const isMissed = p.status === 'missed';
       content = <><div className="detail-art"><Artwork kind={p.category}/></div><p>⌖ {p.area} · {p.category}</p>
-        <div className="detail-metadata"><span>Budget berdua<strong>{money(p.budget)}</strong></span><span>{p.status === 'visited' ? 'Dikunjungi' : 'Jadwal'}<strong>{when(p.status === 'visited' ? p.visited_at : p.scheduled_at)}</strong></span></div>
+        <div className="detail-metadata"><span>Budget berdua<strong>{money(p.budget)}</strong></span><span>{p.status === 'visited' ? 'Dikunjungi' : isMissed ? 'Terlewat' : 'Jadwal'}<strong>{when(p.status === 'visited' ? p.visited_at : p.scheduled_at)}</strong></span></div>
         <blockquote>{p.note || 'Belum ada catatan. Ceritanya menyusul.'}</blockquote>
+        {isMissed && <div className="notice warning">Waktu kencan ini sudah terlewat ({when(p.scheduled_at)}). Jadwalkan tanggal baru atau tandai jika sudah dikunjungi.</div>}
         {readonly ? <div className="notice">Arsip hanya-baca. Tempat tidak dapat diubah.</div> : <div className="button-stack">
-          <button className="primary" disabled={busy} onClick={() => open({kind:'schedule',place:p})}>{p.status === 'planned' ? 'Ubah jadwal' : 'Rencanakan pergi'} →</button>
+          <button className="primary" disabled={busy} onClick={() => open({kind:'schedule',place:p})}>{isMissed ? 'Jadwalkan ulang' : p.status === 'planned' ? 'Ubah jadwal' : 'Rencanakan pergi'} →</button>
           {p.status !== 'visited' && <button className="secondary" disabled={busy} onClick={() => actions.placeAction(p.id,'visited')}>✓ Sudah dikunjungi</button>}
-          {p.status !== 'wish' && <button className="secondary" disabled={busy} onClick={() => actions.placeAction(p.id,'wish')}>{p.status === 'planned' ? 'Batalkan jadwal' : 'Kembalikan ke wishlist'}</button>}
+          {p.status !== 'wish' && <button className="secondary" disabled={busy} onClick={() => actions.placeAction(p.id,'wish')}>{p.status === 'planned' || isMissed ? 'Batalkan jadwal' : 'Kembalikan ke wishlist'}</button>}
           <div className="button-row"><button className="text-button" disabled={busy} onClick={() => open({kind:'place',place:p})}>Edit tempat</button><button className="text-button danger" disabled={busy} onClick={() => open({kind:'delete',place:p})}>Hapus</button></div>
         </div>}</>; break;
     }
     case 'schedule': {
-      title = 'Yuk, jadi pergi.';
+      const isMissed = modal.place.status === 'missed';
+      title = isMissed ? 'Jadwalkan ulang kencan.' : 'Yuk, jadi pergi.';
       content = <><p>{modal.place.name} · Semua waktu menggunakan WIB.</p><form onSubmit={submit(f => actions.placeAction(modal.place.id,'schedule',new Date(field(f,'at')+':00+07:00').toISOString()))}>
-        <label>Tanggal & jam (WIB)<input name="at" type="datetime-local" required defaultValue={wibInput(modal.place.scheduled_at)} disabled={busy}/></label>
-        <div className="notice">Email dijadwalkan H-1 dan 2 jam sebelum pergi, hanya untuk waktu pengingat yang belum lewat.</div>
-        <button className="primary" disabled={busy}>{busy ? 'Menyimpan…' : 'Simpan rencana →'}</button>
+        <label>Tanggal & jam baru (WIB)<input name="at" type="datetime-local" required defaultValue={wibInput(modal.place.scheduled_at)} disabled={busy}/></label>
+        <div className="notice">Email dijadwalkan ulang otomatis (H-1 dan 2 jam sebelum pergi), hanya untuk waktu pengingat yang belum lewat.</div>
+        <button className="primary" disabled={busy}>{busy ? 'Menyimpan…' : isMissed ? 'Simpan jadwal baru →' : 'Simpan rencana →'}</button>
       </form></>; break;
     }
     case 'delete': {

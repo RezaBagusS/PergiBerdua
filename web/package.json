@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit",
     "test:domain": "node --test tests/domain.test.mjs",
     "test:proxy": "node --test tests/proxy.test.mjs",
+    "test:reschedule": "node --test tests/reschedule.test.mjs",
     "test:ui": "node tests/ui-smoke.mjs"
   },
   "dependencies": {

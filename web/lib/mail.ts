@@ -70,6 +70,7 @@ export async function processMailJobs(maxBatch = 10): Promise<{ processed: numbe
 
       if (job.kind === 'reminder') {
         const placeRes = await c.query<{
+          id: string;
           name: string;
           area: string;
           budget: number;
@@ -86,6 +87,9 @@ export async function processMailJobs(maxBatch = 10): Promise<{ processed: numbe
           p.status !== 'planned' ||
           new Date(p.scheduled_at) <= new Date()
         ) {
+          if (p && p.status === 'planned' && new Date(p.scheduled_at) <= new Date()) {
+            await c.query("UPDATE places SET status='missed' WHERE id=$1", [p.id]);
+          }
           await c.query("UPDATE mail_jobs SET status='cancelled' WHERE id=$1", [job.id]);
           return true;
         }

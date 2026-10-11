@@ -10,7 +10,7 @@
     "dev": "npm --prefix web run dev",
     "build": "npm --prefix web run build",
     "typecheck": "npm --prefix web run typecheck",
-    "test": "node --test api/test/domain.test.mjs && npm --prefix web run test:domain && npm --prefix web run test:proxy",
+    "test": "node --test api/test/domain.test.mjs && npm --prefix web run test:domain && npm --prefix web run test:proxy && npm --prefix web run test:reschedule",
     "test:integration": "node --test api/test/api.integration.mjs"
   }
 }

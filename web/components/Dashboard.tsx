@@ -34,9 +34,10 @@ export default function Dashboard(props: DashboardProps) {
   const readonly = room?.status === 'archived';
   const hasActive = me.rooms.some(r => r.status === 'active');
   const list = (data?.places || [])
-    .filter(p => tab === 'plans' ? p.status === 'planned' : tab === 'memories' ? p.status === 'visited' : p.status !== 'visited')
+    .filter(p => tab === 'plans' ? (p.status === 'planned' || p.status === 'missed') : tab === 'memories' ? p.status === 'visited' : p.status !== 'visited')
     .filter(p => filter === 'Semua' || p.category === filter)
     .filter(p => (p.name+' '+p.area).toLowerCase().includes(search.toLowerCase()));
+  const missedList = (data?.places || []).filter(p => p.status === 'missed');
   const next = data?.places.filter(p => p.status === 'planned' && p.scheduled_at && Date.parse(p.scheduled_at) > Date.now())
     .sort((a,b) => Date.parse(a.scheduled_at!) - Date.parse(b.scheduled_at!))[0];
   function navigate(value: Tab) {setFilter('Semua'); setSearch(''); setTab(value);}
@@ -75,11 +76,16 @@ export default function Dashboard(props: DashboardProps) {
               : !readonly && <button className="secondary" disabled={busy} onClick={() => open({kind:'place'})}>Tambah tempat ↗</button>}
           </div>
         </div></section>}
+        {tab === 'plans' && missedList.length > 0 && <div className="reschedule-banner">
+          <div><strong>⚠ Ada {missedList.length} rencana kencan yang terlewat</strong>
+          <p>Waktu kencan sudah terlewat dan belum ditandai dikunjungi. Mau jadwalkan ulang tanggal baru?</p></div>
+          <button className="primary" disabled={busy || !!readonly} onClick={() => open({kind:'schedule',place:missedList[0]})}>Jadwalkan ulang ↻</button>
+        </div>}
         <section className="collection"><div className="section-heading"><div><h2>{tab === 'memories' ? 'Album perjalanan' : tab === 'plans' ? 'Tanggal untuk kita' : 'Daftar kapan-kapan'} <span>{list.length}</span></h2>
           <p>{data.members.length < 2 && !readonly ? 'Pasangan belum bergabung. Undang lewat Akun & ruang.' : 'Yang disimpan hari ini, bisa jadi cerita besok.'}</p></div>
           <input type="search" placeholder="Cari tempat..." aria-label="Cari tempat" value={search} onChange={e => setSearch(e.target.value)}/>
         </div><div className="filters">{(['Semua', ...categories] as const).map(v => <button key={v} aria-pressed={filter === v} className={filter === v ? 'selected' : ''} onClick={() => setFilter(v)}>{v}</button>)}</div>
-          <div className="place-grid">{list.map(p => <PlaceCard key={p.id} place={p} readonly={!!readonly} busy={busy} onOpen={() => open({kind:'detail',place:p})}/>)}</div>
+          <div className="place-grid">{list.map(p => <PlaceCard key={p.id} place={p} readonly={!!readonly} busy={busy} onOpen={() => open({kind: p.status === 'missed' ? 'schedule' : 'detail', place: p})}/>)}</div>
           {!list.length && <div className="empty"><span aria-hidden="true">⌖</span><h3>Masih ada ruang untuk cerita.</h3><p>Tambahkan tempat atau coba kategori lain.</p></div>}
         </section>
         <div className="nudge"><span aria-hidden="true">◷</span><div><strong>Biar “nanti” nggak jadi lupa.</strong><p>Reminder email H-1 & 2 jam sebelumnya. WhatsApp belum terhubung.</p></div><button className="text-button" disabled={busy} onClick={() => navigate('account')}>Atur pengingat →</button></div>
@@ -89,9 +95,10 @@ export default function Dashboard(props: DashboardProps) {
   </div>;
 }
 function PlaceCard({place:p, readonly, busy, onOpen}: {place:Place;readonly:boolean;busy:boolean;onOpen:()=>void}) {
+  const isMissed = p.status === 'missed';
   return <article className="place-card"><div className="place-art"><Artwork kind={p.category}/><span className="tag">{p.category}</span>
-    {p.status !== 'wish' && <span className="status">{p.status === 'visited' ? '✓ Sudah dikunjungi' : '◷ Sudah direncanakan'}</span>}
-  </div><div className="place-body"><h3>{p.name}</h3><p>⌖ {p.area}</p><div className="place-bottom"><span>{money(p.budget)}<small> / berdua</small></span><button className="text-button" disabled={busy} onClick={onOpen}>{readonly ? 'Lihat' : 'Buka'} ↗</button></div></div></article>;
+    {p.status !== 'wish' && <span className={`status ${isMissed ? 'missed' : ''}`}>{p.status === 'visited' ? '✓ Sudah dikunjungi' : isMissed ? '⚠ Terlewat' : '◷ Sudah direncanakan'}</span>}
+  </div><div className="place-body"><h3>{p.name}</h3><p>⌖ {p.area}</p><div className="place-bottom"><span>{money(p.budget)}<small> / berdua</small></span><button className="text-button" disabled={busy} onClick={onOpen}>{readonly ? 'Lihat' : isMissed ? 'Jadwalkan ulang' : 'Buka'} ↗</button></div></div></article>;
 }
 function Account({me,data,busy,open,createInvite,setReminder,refresh}: DashboardProps) {
   const r = data?.room, ro = r?.status === 'archived';

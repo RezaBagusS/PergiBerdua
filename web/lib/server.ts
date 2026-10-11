@@ -111,6 +111,22 @@ async function queuePlace(c: PoolClient, p: { id: string; room_id: string; sched
   }
 }
 
+export async function syncMissedPlaces(c: PoolClient, roomId?: string): Promise<number> {
+  let query = "UPDATE places SET status='missed' WHERE status='planned' AND scheduled_at <= now()";
+  const params: unknown[] = [];
+  if (roomId) {
+    query += ' AND room_id=$1';
+    params.push(roomId);
+  }
+  const res = await c.query(query, params);
+  if (res.rowCount && res.rowCount > 0) {
+    await c.query(
+      "UPDATE mail_jobs SET status='cancelled' WHERE place_id IN (SELECT id FROM places WHERE status='missed') AND status IN ('pending','failed')"
+    );
+  }
+  return res.rowCount || 0;
+}
+
 // ----------------------------------------------------
 // Handlers
 // ----------------------------------------------------
@@ -375,6 +391,7 @@ export async function handleRoom(
   const u = await getAuthUser(cookieHeader);
   return roomTx(async c => {
     const room = await roomAccess(c, u, id);
+    if (id) await syncMissedPlaces(c, id);
     const members = (
       await c.query(
         "SELECT u.id, u.username, m.state FROM memberships m JOIN users u ON u.id=m.user_id WHERE m.room_id=$1 AND m.state!='left'",
@@ -524,7 +541,7 @@ export async function handlePlaceAction(
 
     if (b.action === 'delete') {
       await c.query('DELETE FROM places WHERE id=$1', [p.id]);
-    } else if (b.action === 'schedule') {
+    } else if (b.action === 'schedule' || b.action === 'reschedule') {
       const at = scheduleTime(b.at);
       await c.query("UPDATE places SET status='planned', scheduled_at=$1, visited_at=null WHERE id=$2", [
         at,
@@ -545,11 +562,15 @@ export async function handlePlaceAction(
   });
 }
 
-export async function handleCronReminders(): Promise<{ ok: true; processed: number; errors: number }> {
+export async function handleCronReminders(): Promise<{ ok: true; processed: number; errors: number; missedDetected: number }> {
+  let missedDetected = 0;
+  await roomTx(async c => {
+    missedDetected = await syncMissedPlaces(c);
+  });
   const res = await processMailJobs(20);
   // Periodic cleanup
   await db.query(
     "DELETE FROM rate_events WHERE created_at<now()-interval '1 day'; DELETE FROM otp_requests WHERE created_at<now()-interval '1 day'; DELETE FROM sessions WHERE expires_at<now()"
   ).catch(err => console.error('Cleanup failed:', err));
-  return { ok: true, ...res };
+  return { ok: true, missedDetected, ...res };
 }
