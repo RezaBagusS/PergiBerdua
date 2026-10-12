@@ -41,6 +41,8 @@ async function forwardUpstream(
   if (cookies) headers.set('cookie', cookies);
   const incomingOrigin = request.headers.get('origin');
   if (incomingOrigin) headers.set('origin', incomingOrigin);
+  const host = request.headers.get('host');
+  if (host) headers.set('x-forwarded-host', host);
 
   const upstream = await fetch(target, {
     method: request.method,
@@ -193,6 +195,36 @@ async function handleInternal(
   }
 }
 
+function isAllowedOrigin(originHeader: string | null, request: NextRequest): boolean {
+  if (!originHeader) return false;
+  const configured = process.env.APP_ORIGIN || 'http://localhost:3000';
+  if (originHeader === configured) return true;
+
+  const isProduction = process.env.APP_MODE === 'production';
+  if (!isProduction) {
+    try {
+      const parsed = new URL(originHeader);
+      if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') {
+        return true;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  try {
+    const originUrl = new URL(originHeader);
+    const hostHeader = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    if (hostHeader && originUrl.host === hostHeader) {
+      return true;
+    }
+  } catch {
+    // Abaikan URL tidak valid
+  }
+
+  return false;
+}
+
 async function handler(request: NextRequest, context: Context): Promise<Response> {
   const { path } = await context.params;
   const endpoint = path.join('/');
@@ -201,9 +233,8 @@ async function handler(request: NextRequest, context: Context): Promise<Response
     return jsonError('Endpoint tidak ditemukan.', 404);
   }
 
-  const origin = process.env.APP_ORIGIN || 'http://localhost:3000';
   if (request.method === 'POST') {
-    if (request.headers.get('origin') !== origin) {
+    if (!isAllowedOrigin(request.headers.get('origin'), request)) {
       return jsonError('Origin tidak diizinkan.', 403);
     }
     if (!request.headers.get('content-type')?.startsWith('application/json')) {

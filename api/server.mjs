@@ -9,6 +9,21 @@ if(secret.length<32||secret.startsWith('replace-'))throw Error('Set AUTH_SECRET 
 const origin=process.env.APP_ORIGIN||'http://localhost:3000';
 const secure=process.env.COOKIE_SECURE==='true';
 const production=process.env.APP_MODE==='production';
+function isAllowedOrigin(reqOrigin,reqHost){
+ if(!reqOrigin)return false;
+ if(reqOrigin===origin)return true;
+ if(!production){
+  try{
+   const parsed=new URL(reqOrigin);
+   if(parsed.hostname==='localhost'||parsed.hostname==='127.0.0.1')return true;
+  }catch{}
+ }
+ try{
+  const originHost=new URL(reqOrigin).host;
+  if(reqHost&&originHost===reqHost)return true;
+ }catch{}
+ return false;
+}
 if(production&&(!secure||!origin.startsWith('https://')||!process.env.SMTP_USER||!process.env.SMTP_PASS))throw Error('Production requires HTTPS, secure cookies and configured SMTP credentials.');
 const db=new pg.Pool({max:10});
 const smtp=nodemailer.createTransport({host:process.env.SMTP_HOST||'mailpit',port:Number(process.env.SMTP_PORT||1025),secure:process.env.SMTP_SECURE==='true',...(process.env.SMTP_USER?{auth:{user:process.env.SMTP_USER,pass:process.env.SMTP_PASS}}:{}),connectionTimeout:10000,socketTimeout:15000});
@@ -221,7 +236,7 @@ const server=http.createServer(async(req,res)=>{
   if(path.startsWith('/api/')){
    res.setHeader('Cache-Control','no-store');res.setHeader('Content-Type','application/json; charset=utf-8');
    if(req.method!=='GET'){
-    if(req.headers.origin!==origin)fail(403,'Origin tidak diizinkan.');
+    if(!isAllowedOrigin(req.headers.origin,req.headers['x-forwarded-host']||req.headers.host))fail(403,'Origin tidak diizinkan.');
     if(!(req.headers['content-type']||'').startsWith('application/json'))fail(415,'Gunakan application/json.');
    }
    const handler=routes[req.method+' '+path];if(!handler)fail(404,'Endpoint tidak ditemukan.');
