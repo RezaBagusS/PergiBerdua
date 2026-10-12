@@ -21,7 +21,14 @@ const allowed = new Set([
   'POST invites/create',
   'POST invites/accept',
   'POST places/save',
-  'POST places/action'
+  'POST places/action',
+  'POST admin/login',
+  'POST admin/logout',
+  'GET admin/stats',
+  'GET admin/users',
+  'GET admin/rooms',
+  'GET admin/jobs',
+  'POST admin/jobs/trigger'
 ]);
 
 type Context = { params: Promise<{ path: string[] }> };
@@ -108,6 +115,7 @@ async function handleInternal(
   const startTime = Date.now();
   const { ApiError } = await import('../../../lib/domain');
   const server = await import('../../../lib/server');
+  const admin = await import('../../../lib/admin');
 
   const responseHeaders = new Headers({
     'Content-Type': 'application/json; charset=utf-8',
@@ -225,6 +233,54 @@ async function handleInternal(
           headers: responseHeaders
         });
         break;
+
+      case 'POST admin/login': {
+        const { ok, setCookie } = await admin.handleAdminLogin(String(parsedBody.secret || ''));
+        const headers = new Headers(responseHeaders);
+        headers.set('Set-Cookie', setCookie);
+        result = Response.json({ ok }, { headers });
+        break;
+      }
+
+      case 'POST admin/logout': {
+        const { ok, setCookie } = admin.handleAdminLogout();
+        const headers = new Headers(responseHeaders);
+        headers.set('Set-Cookie', setCookie);
+        result = Response.json({ ok }, { headers });
+        break;
+      }
+
+      case 'GET admin/stats': {
+        admin.verifyAdmin(cookieHeader);
+        result = Response.json(await admin.getAdminStats(), { headers: responseHeaders });
+        break;
+      }
+
+      case 'GET admin/users': {
+        admin.verifyAdmin(cookieHeader);
+        const q = request.nextUrl.searchParams.get('q') || '';
+        result = Response.json(await admin.getAdminUsers(q), { headers: responseHeaders });
+        break;
+      }
+
+      case 'GET admin/rooms': {
+        admin.verifyAdmin(cookieHeader);
+        const q = request.nextUrl.searchParams.get('q') || '';
+        result = Response.json(await admin.getAdminRooms(q), { headers: responseHeaders });
+        break;
+      }
+
+      case 'GET admin/jobs': {
+        admin.verifyAdmin(cookieHeader);
+        result = Response.json(await admin.getAdminJobs(), { headers: responseHeaders });
+        break;
+      }
+
+      case 'POST admin/jobs/trigger': {
+        admin.verifyAdmin(cookieHeader);
+        result = Response.json(await admin.triggerAdminWorker(), { headers: responseHeaders });
+        break;
+      }
 
       default:
         logApi('WARN', `Endpoint tidak ditemukan: ${routeKey}`, { ip: remoteIp });

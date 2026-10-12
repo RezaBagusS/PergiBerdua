@@ -15,3 +15,54 @@
 .reschedule-banner p{font-size:14px;margin-top:4px;color:#7e431c}
 .reschedule-banner button{white-space:nowrap}
 
+/* ===================================================
+   ADMIN PORTAL STYLES
+   =================================================== */
+.admin-login-layout{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at 50% 30%,#ede6f5 0%,var(--paper) 70%)}
+.admin-login-card{width:100%;max-width:440px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:36px 32px;box-shadow:0 16px 48px #3b2a5214}
+.admin-login-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.admin-badge,.admin-portal-tag{font-size:11px;font-weight:650;letter-spacing:.8px;padding:4px 10px;border-radius:12px;background:#ede6f5;color:var(--plum);border:1px solid #dcd1e8}
+.admin-login-card h2{font-size:28px;margin-bottom:8px;color:var(--ink)}
+.admin-login-card p{font-size:14px;margin-bottom:20px;line-height:1.6}
+
+.admin-layout{min-height:100dvh;background:var(--paper)}
+.admin-header{background:#fff;border-bottom:1px solid var(--line);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:sticky;top:0;z-index:20}
+.admin-brand{display:flex;align-items:center;gap:14px}
+.admin-header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.admin-header-actions button,.admin-header-actions a{font-size:13px;padding:8px 14px;min-height:38px}
+.admin-container{max-width:1320px;margin:0 auto;padding:28px 32px}
+.admin-nav{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.admin-nav button{background:none;border:none;padding:12px 18px;font-size:14px;font-weight:600;color:var(--muted);border-radius:9px 9px 0 0;cursor:pointer;white-space:nowrap;transition:all .15s ease}
+.admin-nav button:hover{color:var(--ink);background:#f3eef8}
+.admin-nav button.active{color:var(--plum);background:#fff;box-shadow:0 -2px 0 var(--plum) inset;border-bottom:2px solid var(--plum)}
+
+.admin-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px;margin-top:24px}
+.admin-kpi-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px;box-shadow:0 4px 16px #46315608}
+.kpi-label{font-size:11px;letter-spacing:1px;font-weight:600;color:var(--muted)}
+.kpi-value{font-size:34px;font-weight:700;color:var(--ink);margin:10px 0 12px;line-height:1.1}
+.kpi-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+
+.badge{display:inline-flex;align-items:center;padding:3px 8px;border-radius:8px;font-size:12px;font-weight:550}
+.badge.green{background:#e6f6e2;color:#27691e;border:1px solid #c9ebc1}
+.badge.purple{background:#ede6f5;color:var(--plum);border:1px solid #ded3ea}
+.badge.orange{background:#fdf0e0;color:#8c5210;border:1px solid #f6dbbb}
+.badge.danger{background:#fde8ec;color:var(--danger);border:1px solid #f8c9d3}
+.badge.muted{background:#eeeaf1;color:#63566e;border:1px solid #dfd9e5}
+
+.admin-overview-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px}
+.admin-card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;margin-top:24px;box-shadow:0 4px 16px #46315608}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
+.card-head h3{font-size:19px;color:var(--ink)}
+
+.table-responsive{overflow-x:auto}
+.admin-table{width:100%;border-collapse:collapse;font-size:14px}
+.admin-table th{text-align:left;padding:12px 14px;background:#faf8fc;border-bottom:2px solid var(--line);color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.5px;text-transform:uppercase}
+.admin-table td{padding:14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.admin-table tbody tr:hover{background:#faf8fd}
+.admin-table code{background:#eee8f3;padding:2px 6px;border-radius:6px;font-size:12px;color:var(--plum)}
+
+.admin-spec-list div{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px}
+.admin-spec-list div:last-child{border-bottom:none}
+
+@media(max-width:900px){.admin-kpi-grid{grid-template-columns:repeat(2,1fr)}.admin-overview-grid{grid-template-columns:1fr}.admin-header{padding:16px;flex-wrap:wrap}.admin-container{padding:20px 16px}}
+@media(max-width:500px){.admin-kpi-grid{grid-template-columns:1fr}}

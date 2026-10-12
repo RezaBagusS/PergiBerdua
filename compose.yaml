@@ -23,6 +23,7 @@ services:
     environment:
       DATABASE_URL: postgres://pergiberdua:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@db:5432/pergiberdua
       AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET in .env}
+      ADMIN_SECRET: ${ADMIN_SECRET:-admin12345}
       APP_ORIGIN: ${APP_ORIGIN:-http://localhost:3000}
       COOKIE_SECURE: ${COOKIE_SECURE:-false}
       SMTP_HOST: ${SMTP_HOST:-mailpit}

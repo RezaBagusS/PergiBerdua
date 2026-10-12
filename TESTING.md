@@ -143,3 +143,22 @@ Pengiriman notifikasi email otomatis ke inbox pengguna dan pasangan.
 
 #### Skenario Negatif (-)
 - [ ] **TC-NOTIF-04 (Penanganan SMTP Down):** Simulasikan SMTP tidak dapat dijangkau. Sistem menangani error dengan graceful logging tanpa membuat crash web server utama.
+
+---
+
+### 7. Fitur Web Admin Portal (`/admin`)
+
+Portal terpusat untuk monitoring KPI aplikasi, audit user & room pasangan, serta inspeksi antrean & eksekusi worker background email.
+
+#### Skenario Positif (+)
+- [ ] **TC-ADMIN-01 (Login Admin Berhasil):** Buka `http://localhost:3000/admin`, masukkan master key `admin12345`. Login berhasil dan langsung diarahkan ke Dashboard dengan sesi cookie tersimpan.
+- [ ] **TC-ADMIN-02 (Metrik KPI Live Realtime):** Dashboard menampilkan ringkasan metrik akurat (Total Users, Total Rooms, Rekomendasi Tempat, Email Jobs, dan Pending Queue).
+- [ ] **TC-ADMIN-03 (Manajemen & Filter User):** Tab "Users" menampilkan daftar pengguna terdaftar lengkap dengan status, tanggal dibuat, serta fitur pencarian/filter nama/email/telepon yang responsif.
+- [ ] **TC-ADMIN-04 (Monitoring Ruang Pasangan):** Tab "Rooms" menampilkan daftar room aktif, kode room, tanggal jadian/anniversary, serta partner yang terhubung.
+- [ ] **TC-ADMIN-05 (Antrean Email & Trigger Worker Manual):** Tab "Email Jobs" menampilkan riwayat antrean email reminder. Tombol *"Jalankan Worker Sekarang"* berhasil memproses email reminder pending dan menampilkan notifikasi sukses/jumlah terproses.
+- [ ] **TC-ADMIN-06 (Logout Admin):** Menekan tombol logout membersihkan sesi `pb_admin_session` dan mengembalikan admin ke halaman login terlindungi.
+
+#### Skenario Negatif (-)
+- [ ] **TC-ADMIN-07 (Login Kunci Rahasia Salah):** Masukkan password sembarang (misal `salah123`). Sistem menampilkan pesan error "Kunci rahasia admin salah" dan menolak akses.
+- [ ] **TC-ADMIN-08 (Proteksi Akses Tanpa Sesi):** Akses langsung ke API `/api/admin/stats` atau `/api/admin/users` tanpa login mengembalikan status `401 Unauthorized`.
+
