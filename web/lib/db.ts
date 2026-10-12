@@ -99,12 +99,16 @@ export async function roomTx<T>(fn: (c: PoolClient) => Promise<T>): Promise<T> {
 export async function rateLimit(key: string, limit: number, minutes: number): Promise<void> {
   return tx(async c => {
     await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [key]);
-    const { rows } = await c.query<{ n: number }>(
-      "SELECT count(*)::int AS n FROM rate_events WHERE bucket=$1 AND created_at>now()-($2::int*interval '1 minute')",
+    const { rows } = await c.query<{ n: number; wait_minutes: number | null }>(
+      `SELECT count(*)::int AS n,
+              CEIL(EXTRACT(EPOCH FROM ((min(created_at) + ($2::int * interval '1 minute')) - now())) / 60.0)::int AS wait_minutes
+       FROM rate_events
+       WHERE bucket=$1 AND created_at > now() - ($2::int * interval '1 minute')`,
       [key, minutes]
     );
     if ((rows[0]?.n ?? 0) >= limit) {
-      fail(429, 'Terlalu banyak percobaan. Coba beberapa saat lagi.');
+      const wait = Math.max(1, rows[0]?.wait_minutes ?? minutes);
+      fail(429, `Terlalu banyak percobaan. Coba lagi dalam ${wait} menit.`);
     }
     await c.query('INSERT INTO rate_events(bucket) VALUES($1)', [key]);
   });
