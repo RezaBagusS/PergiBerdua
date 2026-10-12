@@ -60,8 +60,95 @@ export default function AuthScreen({config, pendingInvite, onAuthenticated}: Pro
           </>}
           <button className="primary" disabled={busy}>{busy ? 'Memproses…' : challenge ? 'Verifikasi & masuk' : mode === 'login' ? 'Kirim kode masuk' : 'Daftar dengan OTP'}<span>→</span></button>
         </form>
-        {challenge && <><button className="text-button" disabled={busy} onClick={() => void perform(requestOtp)}>Kirim kode baru</button><button className="text-button" disabled={busy} onClick={() => {setChallenge(null); setError(''); setInfo('');}}>Ganti email / kembali</button></>}
-        {error && <p className="error" role="alert">{error}</p>}
+        {challenge && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '14px', alignItems: 'center' }}>
+            <button type="button" className="text-button" disabled={busy} onClick={() => void perform(requestOtp)}>
+              Kirim ulang kode OTP ↻
+            </button>
+            <button
+              type="button"
+              className="text-button"
+              disabled={busy}
+              onClick={() => {
+                setChallenge(null);
+                setCode('');
+                setError('');
+                setInfo('');
+              }}
+            >
+              ← Kembali ke Halaman Masuk / Daftar
+            </button>
+          </div>
+        )}
+        {error && (
+          <div style={{ marginTop: '14px' }}>
+            <p className="error" role="alert">{error}</p>
+            {error.includes('belum terdaftar') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => {
+                    setMode('register');
+                    setChallenge(null);
+                    setCode('');
+                    setError('');
+                    setInfo('');
+                  }}
+                >
+                  Buat Akun Baru (Daftar) Sekarang →
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setChallenge(null);
+                    setCode('');
+                    setError('');
+                    setInfo('');
+                  }}
+                >
+                  ← Kembali ke Halaman Masuk / Daftar
+                </button>
+              </div>
+            )}
+            {error.includes('sudah terdaftar') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy}
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => {
+                    setMode('login');
+                    setChallenge(null);
+                    setCode('');
+                    setError('');
+                    setInfo('');
+                  }}
+                >
+                  Masuk ke Akun Terdaftar →
+                </button>
+                <button
+                  type="button"
+                  className="text-button"
+                  disabled={busy}
+                  onClick={() => {
+                    setChallenge(null);
+                    setCode('');
+                    setError('');
+                    setInfo('');
+                  }}
+                >
+                  ← Kembali ke Halaman Masuk / Daftar
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {info && <p className="fineprint" role="status">{info}</p>}
         {config.mode === 'development' && <div className="notice">Mode lokal: email ditangkap Mailpit. Buka <a href="http://localhost:8025" target="_blank" rel="noopener noreferrer">kotak email pengujian ↗</a>, bukan inbox sungguhan.</div>}
         <p className="fineprint">Akun tetap milik masing-masing. Tanggal jadian bukan kunci login.</p>

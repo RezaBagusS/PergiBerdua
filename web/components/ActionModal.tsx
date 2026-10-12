@@ -56,7 +56,7 @@ export default function ActionModal({modal,busy,error,readonly,close,open,action
       const isMissed = modal.place.status === 'missed';
       title = isMissed ? 'Jadwalkan ulang kencan.' : 'Yuk, jadi pergi.';
       content = <><p>{modal.place.name} · Semua waktu menggunakan WIB.</p><form onSubmit={submit(f => actions.placeAction(modal.place.id,'schedule',new Date(field(f,'at')+':00+07:00').toISOString()))}>
-        <label>Tanggal & jam baru (WIB)<input name="at" type="datetime-local" required defaultValue={wibInput(modal.place.scheduled_at)} disabled={busy}/></label>
+        <label>{isMissed ? 'Tanggal & jam baru (WIB)' : 'Tanggal & jam (WIB)'}<input name="at" type="datetime-local" required defaultValue={wibInput(modal.place.scheduled_at)} disabled={busy}/></label>
         <div className="notice">Email dijadwalkan ulang otomatis (H-1 dan 2 jam sebelum pergi), hanya untuk waktu pengingat yang belum lewat.</div>
         <button className="primary" disabled={busy}>{busy ? 'Menyimpan…' : isMissed ? 'Simpan jadwal baru →' : 'Simpan rencana →'}</button>
       </form></>; break;
