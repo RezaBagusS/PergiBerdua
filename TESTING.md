@@ -64,24 +64,27 @@ Fitur login tanpa kata sandi via kode 6-digit OTP, sesi HttpOnly cookie, dan pem
 
 ---
 
-### 2. Ruang Pasangan & Sistem Undangan
-Fitur pembuatan ruang privat kencan, generate kode unik undangan, bergabung berpasangan (maksimal 2 orang), pergantian peran, serta keluar ruang / arsip readonly.
+### 2. Ruang Pasangan & Sistem Undangan Berbasis Email
+Fitur pembuatan ruang privat kencan, undang pasangan via email terdaftar, terima/tolak undangan, notifikasi penolakan ke pengirim, kapasitas maksimal 2 orang, serta proteksi keamanan dari berbagai edge cases (lubang sistem).
 
 #### Skenario Positif (+)
-- [ ] **TC-ROOM-01 (Buat Ruang Baru):** Pengguna tanpa ruang dapat membuat ruang baru dengan mengisi nama ruang (contoh: "Ruang Cinta Kita"). Ruang aktif terbentuk.
-- [ ] **TC-ROOM-02 (Generate Kode Undangan):** Di dalam ruang aktif, klik buat/tampilkan kode undangan. Muncul kode unik 6-8 karakter untuk dibagikan ke pasangan.
-- [ ] **TC-ROOM-03 (Gabung Menggunakan Kode):** Akun pengguna kedua memasukkan kode undangan yang valid. Pengguna kedua berhasil bergabung ke dalam ruang tersebut.
-- [ ] **TC-ROOM-04 (Sinkronisasi Data Dua Arah):** Perubahan yang dibuat oleh pasangan pertama (misal menambah tempat) dapat dilihat oleh pasangan kedua saat halaman diperbarui.
-- [ ] **TC-ROOM-05 (Keluar dari Ruang Pasangan):** Salah satu anggota memilih *Tinggalkan Ruang*. Status anggota diperbarui menjadi `left`.
-- [ ] **TC-ROOM-06 (Arsip Ruang Readonly):** Ruang yang ditinggalkan berubah status menjadi arsip readonly, data riwayat tetap tersimpan tanpa bisa diubah kembali secara aktif.
+- [ ] **TC-ROOM-01 (Buat Ruang Baru):** Pengguna (User A) dapat membuat ruang baru dengan mengisi nama ruang dan tanggal jadian (opsional). Ruang aktif terbentuk dengan status `1/2 Anggota`.
+- [ ] **TC-ROOM-02 (Undang Pasangan via Email):** Di tab *Akun & ruang*, klik *Undang pasangan via email*, masukkan email User B yang sudah terdaftar. Undangan terkirim dan status ruang menampilkan *Menunggu tanggapan dari [email User B]*.
+- [ ] **TC-ROOM-03 (Banner Undangan Masuk User B):** Saat User B login ke aplikasinya, muncul banner undangan di beranda: *"[User A] mengundangmu untuk bergabung ke ruang [Nama Ruang]"* dengan tombol *Terima undangan* dan *Tolak undangan*.
+- [ ] **TC-ROOM-04 (User B Menerima Undangan):** User B mengklik *Terima undangan*. Keduanya langsung berada di ruang yang sama dengan status `2/2 Anggota`, dan seluruh wishlist kencan tersinkronisasi.
+- [ ] **TC-ROOM-05 (User A Menerima Notifikasi Diterima):** User A melihat pemberitahuan akun di beranda bahwa User B telah menerima undangan dan bergabung.
+- [ ] **TC-ROOM-06 (User B Menolak Undangan):** User B mengklik *Tolak undangan*. Undangan dibatalkan dan banner undangan masuk hilang dari layar User B.
+- [ ] **TC-ROOM-07 (User A Menerima Notifikasi Penolakan):** Saat undangan ditolak oleh User B, User A otomatis mendapatkan notifikasi di beranda: *"[User B] menolak undangan untuk bergabung ke ruang... Kamu dapat mengundang pengguna lain."*
+- [ ] **TC-ROOM-08 (Batalkan Undangan Sebelum Ditanggapi):** User A dapat membatalkan undangan yang sedang pending kapan saja dengan menekan tombol *Batalkan undangan*.
+- [ ] **TC-ROOM-09 (Keluar dari Ruang Pasangan):** Salah satu anggota memilih *Keluar dari ruang pasangan*. Status keanggotaan diperbarui menjadi `left`.
+- [ ] **TC-ROOM-10 (Arsip Ruang Readonly):** Ruang yang ditinggalkan berubah status menjadi arsip readonly, data riwayat tetap tersimpan tanpa bisa diubah kembali secara aktif.
 
 #### Skenario Negatif (-)
-- [ ] **TC-ROOM-07 (Kode Undangan Salah):** Masukkan kode undangan yang tidak terdaftar/salah ketik. Sistem menampilkan pesan error bahwa kode tidak ditemukan.
-- [ ] **TC-ROOM-08 (Kode Undangan Expired):** Masukkan kode undangan yang masa berlakunya telah habis. Sistem menolak bergabung.
-- [ ] **TC-ROOM-09 (Kapasitas Maksimal 2 Orang):** Akun ketiga mencoba memasukkan kode undangan ruang yang sudah beranggotakan 2 orang. Sistem menolak bergabung dengan pesan kapasitas ruang penuh.
-- [ ] **TC-ROOM-10 (Bergabung ke Ruang Sendiri):** Pembuat ruang mencoba memasukkan kode undangannya sendiri. Sistem menolak operasi ini.
-- [ ] **TC-ROOM-11 (Modifikasi Data di Ruang Terarsip):** Coba tambah ide atau ubah status pada ruang yang sudah berstatus arsip/bubar. Sistem menolak perubahan (readonly mode).
-- [ ] **TC-ROOM-12 (Membuat Ruang Ganda):** Pengguna yang sudah berada dalam ruang aktif mencoba membuat ruang baru tanpa keluar terlebih dahulu. Sistem mencegah duplikasi ruang aktif.
+- [ ] **TC-ROOM-11 (Email Pasangan Belum Terdaftar):** User A mengundang email yang belum memiliki akun PergiBerdua. Sistem menolak dengan pesan error: *"Email belum terdaftar sebagai pengguna PergiBerdua. Minta pasanganmu membuat akun terlebih dahulu."*
+- [ ] **TC-ROOM-12 (Mengundang Email Sendiri):** User A memasukkan alamat email miliknya sendiri ke form undangan. Sistem menolak dengan pesan error: *"Tidak dapat mengundang email sendiri."*
+- [ ] **TC-ROOM-13 (Mengundang User yang Sudah Punya Ruang Aktif):** User A mengundang User B yang saat ini sudah tergabung di ruang aktif lain. Sistem menolak dengan pesan: *"Pengguna ini sudah memiliki ruang aktif bersama pasangan lain."*
+- [ ] **TC-ROOM-14 (Kapasitas Maksimal 2 Orang):** Mencoba mengundang orang ketiga ke dalam ruang yang sudah beranggotakan 2 orang. Sistem menolak dengan pesan: *"Ruang sudah berisi dua anggota."*
+- [ ] **TC-ROOM-15 (Menerima Undangan Saat Masih Punya Ruang Aktif):** Pengguna yang sudah punya ruang aktif mencoba menerima undangan baru. Tombol dinonaktifkan dengan peringatan harus keluar dari ruang lama terlebih dahulu.
 
 ---
 

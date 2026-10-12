@@ -10,6 +10,8 @@ export interface ModalActions {
   placeAction: (id: string, action: PlaceAction, at?: string) => void;
   leave: (roomId: string) => void;
   join: (value: string) => void;
+  inviteEmail: (email: string) => void;
+  cancelInvite: (roomId: string) => void;
 }
 interface Props {
   modal: ModalState; busy: boolean; error: string; readonly: boolean;
@@ -74,11 +76,26 @@ export default function ActionModal({modal,busy,error,readonly,close,open,action
       </form></>; break;
     }
     case 'invite': {
-      title = 'Satu undangan untuk pasangan.';
-      content = <><p>Tautan sekali pakai, berlaku 24 jam. Hanya bagikan kepada pasangan. Membuat undangan baru membatalkan tautan sebelumnya.</p>
-        <label>Tautan undangan<input ref={inviteInput} readOnly value={modal.invitation.url}/></label>
-        <button className="primary" onClick={async () => {try{await navigator.clipboard.writeText(modal.invitation.url);setCopyInfo('Tautan disalin.');}catch{inviteInput.current?.select();setCopyInfo('Salin teks yang disorot.');}}}>Salin tautan</button>
-        <p className="fineprint" role="status">{copyInfo}</p><p className="fineprint">Tes menggunakan browser lain atau jendela privat. Akses perangkat lain memerlukan konfigurasi origin dan jaringan.</p></>; break;
+      title = 'Undang pasangan ke ruang ini.';
+      content = <>
+        <p>Masukkan alamat email pasanganmu. Pasanganmu harus sudah terdaftar di PergiBerdua agar dapat menerima undangan.</p>
+        {modal.outgoingInvite && (
+          <div className="notice" style={{marginBottom: 16}}>
+            <strong>Undangan sedang aktif:</strong>
+            <p>Terkirim ke <b>{modal.outgoingInvite.invitee_email}</b>{modal.outgoingInvite.invitee_name ? ` (${modal.outgoingInvite.invitee_name})` : ''}. Menunggu konfirmasi pasangan.</p>
+            <button type="button" className="danger-outline" style={{marginTop: 8}} disabled={busy} onClick={() => actions.cancelInvite(modal.roomId)}>
+              Batalkan undangan ini
+            </button>
+          </div>
+        )}
+        <form onSubmit={submit(f => actions.inviteEmail(field(f,'email')))}>
+          <label>Email Pasangan
+            <input name="email" type="email" required placeholder="pasangan@email.com" defaultValue={modal.outgoingInvite?.invitee_email || ''} disabled={busy}/>
+            <small>Sistem akan memverifikasi apakah akun pasangan sudah terdaftar.</small>
+          </label>
+          <button className="primary" disabled={busy}>{busy ? 'Mengirim undangan…' : 'Kirim undangan pasangan →'}</button>
+        </form>
+      </>; break;
     }
     case 'join': {
       title = 'Bergabung dengan pasangan.';

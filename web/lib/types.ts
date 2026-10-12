@@ -24,10 +24,43 @@ export interface MailJob {
   scheduled_at: string; attempts: number;
 }
 export interface Notice {id: string; message: string; created_at: string}
-export interface MeResponse {user: User; rooms: Room[]; notices: Notice[]}
-export interface RoomResponse {room: Room; members: Member[]; places: Place[]; jobs: MailJob[]}
+export interface IncomingInvite {
+  id: string;
+  room_id: string;
+  room_title: string;
+  inviter_name: string;
+  inviter_email: string;
+  created_at: string;
+}
+export interface OutgoingInvite {
+  id: string;
+  invitee_email: string;
+  invitee_name?: string;
+  status: string;
+  created_at: string;
+}
+export interface MeResponse {
+  user: User;
+  rooms: Room[];
+  notices: Notice[];
+  incomingInvite?: IncomingInvite | null;
+}
+export interface RoomResponse {
+  room: Room;
+  members: Member[];
+  places: Place[];
+  jobs: MailJob[];
+  outgoingInvite?: OutgoingInvite | null;
+}
 export interface Config {mode: 'development' | 'production'; email: string; whatsapp: boolean}
-export interface Invitation {url: string; code: string; expiresInHours: number}
+export interface Invitation {
+  url?: string;
+  code?: string;
+  expiresInHours?: number;
+  inviteId?: string;
+  email?: string;
+  username?: string;
+}
 export type PlaceAction = 'schedule' | 'reschedule' | 'visited' | 'wish' | 'delete';
 export type ModalState =
   | {kind: 'place'; place?: Place}
@@ -35,6 +68,6 @@ export type ModalState =
   | {kind: 'schedule'; place: Place}
   | {kind: 'delete'; place: Place}
   | {kind: 'room-profile'; room?: Room}
-  | {kind: 'invite'; invitation: Invitation}
+  | {kind: 'invite'; roomId: string; outgoingInvite?: OutgoingInvite | null}
   | {kind: 'join'}
   | {kind: 'leave'; room: Room};

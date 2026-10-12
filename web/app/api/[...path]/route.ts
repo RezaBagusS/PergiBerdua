@@ -20,6 +20,8 @@ const allowed = new Set([
   'POST rooms/profile',
   'POST invites/create',
   'POST invites/accept',
+  'POST invites/reject',
+  'POST invites/cancel',
   'POST places/save',
   'POST places/action',
   'POST admin/login',
@@ -218,6 +220,18 @@ async function handleInternal(
 
       case 'POST invites/accept':
         result = Response.json(await server.handleInviteAccept(cookieHeader, parsedBody), {
+          headers: responseHeaders
+        });
+        break;
+
+      case 'POST invites/reject':
+        result = Response.json(await server.handleInviteReject(cookieHeader, parsedBody), {
+          headers: responseHeaders
+        });
+        break;
+
+      case 'POST invites/cancel':
+        result = Response.json(await server.handleInviteCancel(cookieHeader, parsedBody), {
           headers: responseHeaders
         });
         break;

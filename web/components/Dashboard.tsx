@@ -17,6 +17,9 @@ export interface DashboardProps {
   acceptInvite: () => void;
   dismissInvite: () => void;
   createInvite: () => void;
+  acceptIncoming?: (inviteId: string) => void;
+  rejectIncoming?: (inviteId: string) => void;
+  cancelInvite?: () => void;
   setReminder: (enabled: boolean) => void;
   refresh: () => void;
 }
@@ -27,7 +30,7 @@ const navItems: {id: Tab; icon: string; label: string}[] = [
 const mailLabels = {pending:'Terjadwal',sending:'Mengirim',sent:'Terkirim',failed:'Gagal',cancelled:'Dibatalkan'};
 
 export default function Dashboard(props: DashboardProps) {
-  const {me, data, config, pendingInvite, busy, tab, setTab, selectRoom, open, logout, acceptInvite, dismissInvite} = props;
+  const {me, data, config, pendingInvite, busy, tab, setTab, selectRoom, open, logout, acceptInvite, dismissInvite, acceptIncoming, rejectIncoming, cancelInvite} = props;
   const [filter, setFilter] = useState<Filter>('Semua');
   const [search, setSearch] = useState('');
   const room = data?.room;
@@ -54,8 +57,41 @@ export default function Dashboard(props: DashboardProps) {
         </select>}
         <button className="text-button" disabled={busy} onClick={logout}>Keluar akun</button>
       </div></header>
-      {!!me.notices.length && <details className="notice"><summary>Pemberitahuan akun ({me.notices.length})</summary>{me.notices.map(n => <p key={n.id}>{n.message}</p>)}</details>}
-      {pendingInvite && <div className="invite-banner"><div><strong>Undangan pasangan menunggu.</strong><p>{hasActive ? 'Kamu masih memiliki ruang aktif. Keluar dari ruang tersebut sebelum menerima.' : 'Pastikan tautan berasal dari pasanganmu sebelum menerima.'}</p></div><button className="primary" disabled={busy || hasActive} onClick={acceptInvite}>Terima undangan</button><button className="text-button" disabled={busy} onClick={dismissInvite}>Abaikan</button></div>}
+      {!!me.notices.length && (
+        <details className="notice" open>
+          <summary><strong>Pemberitahuan akun ({me.notices.length})</strong></summary>
+          {me.notices.map(n => <p key={n.id}>• {n.message}</p>)}
+        </details>
+      )}
+      {me.incomingInvite && (
+        <div className="invite-banner incoming-banner">
+          <div>
+            <strong>Undangan Bergabung ke Ruang</strong>
+            <p>
+              <b>{me.incomingInvite.inviter_name}</b> ({me.incomingInvite.inviter_email}) mengundangmu untuk bergabung ke ruang <em>"{me.incomingInvite.room_title}"</em>.
+              {hasActive ? ' Kamu masih memiliki ruang aktif lain. Keluar dari ruang tersebut sebelum menerima.' : ' Jika diterima, kalian berdua akan berbagi ruang kencan yang sama.'}
+            </p>
+          </div>
+          <div className="banner-actions">
+            <button className="primary" disabled={busy || hasActive} onClick={() => acceptIncoming?.(me.incomingInvite!.id)}>
+              Terima undangan
+            </button>
+            <button className="danger-outline" disabled={busy} onClick={() => rejectIncoming?.(me.incomingInvite!.id)}>
+              Tolak undangan
+            </button>
+          </div>
+        </div>
+      )}
+      {pendingInvite && !me.incomingInvite && (
+        <div className="invite-banner">
+          <div>
+            <strong>Undangan pasangan menunggu.</strong>
+            <p>{hasActive ? 'Kamu masih memiliki ruang aktif. Keluar dari ruang tersebut sebelum menerima.' : 'Pastikan tautan berasal dari pasanganmu sebelum menerima.'}</p>
+          </div>
+          <button className="primary" disabled={busy || hasActive} onClick={acceptInvite}>Terima undangan</button>
+          <button className="text-button" disabled={busy} onClick={dismissInvite}>Abaikan</button>
+        </div>
+      )}
       {tab === 'account' ? <Account {...props}/> : !room || !data ? <section className="empty-onboarding">
         <div className="eyebrow">SATU RUANG, DUA ORANG.</div><h1>Rencana pertama<br/>dimulai <em>di sini.</em></h1>
         <p>Buat ruang sendiri, lalu undang pasangan. Atau gunakan tautan yang pasanganmu bagikan.</p>
@@ -100,7 +136,7 @@ function PlaceCard({place:p, readonly, busy, onOpen}: {place:Place;readonly:bool
     {p.status !== 'wish' && <span className={`status ${isMissed ? 'missed' : ''}`}>{p.status === 'visited' ? '✓ Sudah dikunjungi' : isMissed ? '⚠ Terlewat' : '◷ Sudah direncanakan'}</span>}
   </div><div className="place-body"><h3>{p.name}</h3><p>⌖ {p.area}</p><div className="place-bottom"><span>{money(p.budget)}<small> / berdua</small></span><button className="text-button" disabled={busy} onClick={onOpen}>{readonly ? 'Lihat' : isMissed ? 'Jadwalkan ulang' : 'Buka'} ↗</button></div></div></article>;
 }
-function Account({me,data,busy,open,createInvite,setReminder,refresh}: DashboardProps) {
+function Account({me,data,busy,open,createInvite,cancelInvite,setReminder,refresh}: DashboardProps) {
   const r = data?.room, ro = r?.status === 'archived';
   return <>
     <section className="greeting"><div><div className="eyebrow">MILIKMU, TETAP MILIKMU.</div><h1>Akun & ruang berdua.</h1></div></section>
@@ -115,7 +151,20 @@ function Account({me,data,busy,open,createInvite,setReminder,refresh}: Dashboard
           <span className="env-pill">{ro ? 'ARSIP HANYA-BACA' : `${data.members.length}/2 ANGGOTA`}</span>
           {!ro && <div className="button-stack">
             <button className="secondary" disabled={busy} onClick={() => open({kind:'room-profile',room:r})}>Ubah profil ruang</button>
-            {data.members.length < 2 && <button className="primary" disabled={busy} onClick={createInvite}>Buat undangan pasangan</button>}
+            {data.members.length < 2 && (
+              data.outgoingInvite ? (
+                <div className="notice" style={{marginTop: 8}}>
+                  <strong>Undangan pasangan terkirim:</strong>
+                  <p>Menunggu tanggapan dari <b>{data.outgoingInvite.invitee_email}</b>{data.outgoingInvite.invitee_name ? ` (${data.outgoingInvite.invitee_name})` : ''}.</p>
+                  <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+                    <button className="secondary" disabled={busy} onClick={createInvite}>Ganti email undangan</button>
+                    <button className="danger-outline" disabled={busy} onClick={cancelInvite}>Batalkan undangan</button>
+                  </div>
+                </div>
+              ) : (
+                <button className="primary" disabled={busy} onClick={createInvite}>Undang pasangan via email</button>
+              )
+            )}
             <button className="danger-outline" disabled={busy} onClick={() => open({kind:'leave',room:r})}>Keluar dari ruang pasangan</button>
           </div>}</> : <p>Satu ruang aktif per akun. Arsip lama tidak dihitung sebagai ruang aktif.</p>}
         {!me.rooms.some(r => r.status === 'active') && <div className="button-stack"><button className="primary" disabled={busy} onClick={() => open({kind:'room-profile'})}>Buat ruang baru</button><button className="secondary" disabled={busy} onClick={() => open({kind:'join'})}>Masukkan kode undangan</button></div>}

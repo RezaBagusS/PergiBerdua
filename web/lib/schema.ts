@@ -38,8 +38,22 @@ CREATE UNIQUE INDEX IF NOT EXISTS one_active_room ON memberships(user_id) WHERE 
 CREATE TABLE IF NOT EXISTS invitations (
  token_hash text PRIMARY KEY, room_id uuid NOT NULL REFERENCES rooms(id),
  created_by uuid NOT NULL REFERENCES users(id),
- expires_at timestamptz NOT NULL, used boolean NOT NULL DEFAULT false
+ expires_at timestamptz NOT NULL, used boolean NOT NULL DEFAULT false,
+ id uuid DEFAULT gen_random_uuid(),
+ invitee_id uuid REFERENCES users(id),
+ invitee_email text,
+ status text NOT NULL DEFAULT 'pending',
+ created_at timestamptz NOT NULL DEFAULT now(),
+ responded_at timestamptz
 );
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS id uuid DEFAULT gen_random_uuid();
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS invitee_id uuid REFERENCES users(id);
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS invitee_email text;
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'pending';
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE invitations ADD COLUMN IF NOT EXISTS responded_at timestamptz;
+CREATE INDEX IF NOT EXISTS invitations_email_idx ON invitations(invitee_email, status);
+CREATE INDEX IF NOT EXISTS invitations_invitee_idx ON invitations(invitee_id, status);
 CREATE TABLE IF NOT EXISTS places (
  id uuid PRIMARY KEY, room_id uuid NOT NULL REFERENCES rooms(id),
  name text NOT NULL, area text NOT NULL DEFAULT '',

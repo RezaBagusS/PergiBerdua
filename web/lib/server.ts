@@ -290,10 +290,25 @@ export async function handleMe(cookieHeader: string | null | undefined): Promise
     'SELECT id, message, created_at FROM notifications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 10',
     [u.id]
   );
+  const incoming = await db.query(
+    `SELECT i.id, i.room_id, r.title AS room_title, u.username AS inviter_name, u.email AS inviter_email, i.created_at
+     FROM invitations i
+     JOIN rooms r ON r.id = i.room_id
+     JOIN users u ON u.id = i.created_by
+     WHERE (i.invitee_id = $1 OR lower(i.invitee_email) = lower($2))
+       AND i.status = 'pending'
+       AND i.used = false
+       AND i.expires_at > now()
+       AND r.status = 'active'
+     ORDER BY i.created_at DESC
+     LIMIT 1`,
+    [u.id, u.email]
+  );
   return {
     user: u,
     rooms: rooms.rows,
-    notices: notices.rows
+    notices: notices.rows,
+    incomingInvite: (incoming.rows[0] as MeResponse['incomingInvite']) || null
   };
 }
 
@@ -356,7 +371,7 @@ export async function handleRoomLeave(
     await c.query("UPDATE memberships SET state='left' WHERE room_id=$1 AND user_id=$2", [roomId, u.id]);
     await c.query("UPDATE memberships SET state='archived' WHERE room_id=$1 AND state='active'", [roomId]);
     await c.query("UPDATE rooms SET status='archived', archived_at=now() WHERE id=$1", [roomId]);
-    await c.query('UPDATE invitations SET used=true WHERE room_id=$1', [roomId]);
+    await c.query("UPDATE invitations SET status='cancelled', used=true WHERE room_id=$1", [roomId]);
     await c.query("UPDATE mail_jobs SET status='cancelled' WHERE room_id=$1 AND status IN ('pending','failed')", [
       roomId
     ]);
@@ -407,18 +422,28 @@ export async function handleRoom(
         [id, u.id]
       )
     ).rows;
-    return { room, members, places, jobs };
+    const outgoing = id ? (
+      await c.query(
+        `SELECT i.id, i.invitee_email, u.username AS invitee_name, i.status, i.created_at
+         FROM invitations i
+         LEFT JOIN users u ON u.id = i.invitee_id
+         WHERE i.room_id = $1 AND i.status = 'pending' AND i.used = false AND i.expires_at > now()
+         ORDER BY i.created_at DESC LIMIT 1`,
+        [id]
+      )
+    ).rows[0] || null : null;
+    return { room, members, places, jobs, outgoingInvite: (outgoing as RoomResponse['outgoingInvite']) || null };
   });
 }
 
 export async function handleInviteCreate(
   cookieHeader: string | null | undefined,
   b: Record<string, unknown>
-): Promise<{ url: string; code: string; expiresInHours: number }> {
+): Promise<{ url: string; code: string; expiresInHours: number; inviteId?: string; email?: string; username?: string }> {
   const u = await getAuthUser(cookieHeader);
   return roomTx(async c => {
     const roomId = validateUuid(b.roomId);
-    await roomAccess(c, u, roomId, true);
+    const room = await roomAccess(c, u, roomId, true);
 
     const members = await c.query<{ n: number }>(
       "SELECT count(*)::int AS n FROM memberships WHERE room_id=$1 AND state='active'",
@@ -426,14 +451,87 @@ export async function handleInviteCreate(
     );
     if ((members.rows[0]?.n ?? 0) >= 2) fail(409, 'Ruang sudah berisi dua anggota.');
 
-    await c.query('UPDATE invitations SET used=true WHERE room_id=$1', [roomId]);
+    // Cancel existing pending invitations for this room
+    await c.query("UPDATE invitations SET status='cancelled', used=true WHERE room_id=$1 AND status='pending'", [roomId]);
     const raw = token();
+    const tokenHash = hash(raw);
+    const inviteId = randomUUID();
+
+    if (b.email) {
+      await rateLimit('invite:' + hash(u.id), 15, 15);
+      const email = String(b.email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'Format email tidak valid.');
+
+      // 1. Hole: Mengundang email sendiri
+      if (email === u.email.toLowerCase()) {
+        fail(400, 'Tidak dapat mengundang email sendiri.');
+      }
+
+      // 2. Cari target user di database
+      const targetUser = (
+        await c.query<{ id: string; email: string; username: string }>(
+          'SELECT id, email, username FROM users WHERE lower(email)=$1',
+          [email]
+        )
+      ).rows[0];
+
+      if (!targetUser) {
+        fail(404, 'Email belum terdaftar sebagai pengguna PergiBerdua. Minta pasanganmu membuat akun terlebih dahulu.');
+      }
+
+      if (targetUser.id === u.id) {
+        fail(400, 'Tidak dapat mengundang email sendiri.');
+      }
+
+      // 3. Hole: Target user sudah memiliki ruang aktif bersama pasangan lain
+      const activeMem = await c.query(
+        "SELECT 1 FROM memberships WHERE user_id=$1 AND state='active'",
+        [targetUser.id]
+      );
+      if (activeMem.rows.length > 0) {
+        fail(409, 'Pengguna ini sudah memiliki ruang aktif bersama pasangan lain.');
+      }
+
+      // 4. Hole: Pasangan sudah pernah memiliki riwayat ruang bersama
+      const key = pairKey(u.username, targetUser.username);
+      const existing = await c.query('SELECT id FROM rooms WHERE pair_key=$1', [key]);
+      if (existing.rows.length) {
+        fail(409, 'Pasangan username ini sudah pernah memiliki ruang. Pemulihan ruang lama belum tersedia.');
+      }
+
+      await c.query(
+        `INSERT INTO invitations(token_hash, room_id, created_by, expires_at, id, invitee_id, invitee_email, status)
+         VALUES($1, $2, $3, now()+interval '7 days', $4, $5, $6, 'pending')`,
+        [tokenHash, roomId, u.id, inviteId, targetUser.id, targetUser.email]
+      );
+
+      // Notifikasi ke User B
+      await c.query(
+        'INSERT INTO notifications(id, user_id, message) VALUES($1, $2, $3)',
+        [
+          randomUUID(),
+          targetUser.id,
+          `${u.username} mengundangmu untuk bergabung ke ruang "${room.title}". Periksa beranda untuk menerima atau menolak.`
+        ]
+      );
+
+      return {
+        url: origin + '/#invite=' + raw,
+        code: raw,
+        expiresInHours: 168,
+        inviteId,
+        email: targetUser.email,
+        username: targetUser.username
+      };
+    }
+
+    // Token-only flow (backward compatibility)
     await c.query(
-      "INSERT INTO invitations(token_hash, room_id, created_by, expires_at) VALUES($1, $2, $3, now()+interval '24 hours')",
-      [hash(raw), roomId, u.id]
+      "INSERT INTO invitations(token_hash, room_id, created_by, expires_at, id, status) VALUES($1, $2, $3, now()+interval '24 hours', $4, 'pending')",
+      [tokenHash, roomId, u.id, inviteId]
     );
 
-    return { url: origin + '/#invite=' + raw, code: raw, expiresInHours: 24 };
+    return { url: origin + '/#invite=' + raw, code: raw, expiresInHours: 24, inviteId };
   });
 }
 
@@ -442,21 +540,37 @@ export async function handleInviteAccept(
   b: Record<string, unknown>
 ): Promise<{ id: string }> {
   const u = await getAuthUser(cookieHeader);
-  const tokenStr = String(b.token || '');
-  if (!/^[a-f0-9]{64}$/.test(tokenStr)) fail(400, 'Kode undangan tidak valid.');
+  const tokenStr = b.token ? String(b.token) : '';
+  const inviteId = b.inviteId ? String(b.inviteId) : '';
+
+  if (!tokenStr && !inviteId) fail(400, 'Undangan tidak valid.');
+  if (tokenStr && !/^[a-f0-9]{64}$/.test(tokenStr)) fail(400, 'Kode undangan tidak valid.');
 
   return roomTx(async c => {
-    if (await activeRoom(c, u)) fail(409, 'Kamu sudah memiliki ruang aktif.');
+    if (await activeRoom(c, u)) fail(409, 'Kamu sudah memiliki ruang aktif. Keluar dari ruang tersebut sebelum menerima.');
 
-    const inv = (
-      await c.query<{ room_id: string }>(
-        'SELECT * FROM invitations WHERE token_hash=$1 AND used=false AND expires_at>now()',
-        [hash(tokenStr)]
-      )
-    ).rows[0];
-    if (!inv) fail(400, 'Undangan sudah dipakai, dibatalkan, atau kedaluwarsa.');
+    const inv = inviteId
+      ? (
+          await c.query<{ id: string; token_hash: string; room_id: string; created_by: string; invitee_id: string | null; invitee_email: string | null }>(
+            "SELECT * FROM invitations WHERE id=$1 AND status='pending' AND used=false AND expires_at>now()",
+            [validateUuid(inviteId)]
+          )
+        ).rows[0]
+      : (
+          await c.query<{ id: string; token_hash: string; room_id: string; created_by: string; invitee_id: string | null; invitee_email: string | null }>(
+            "SELECT * FROM invitations WHERE token_hash=$1 AND status='pending' AND used=false AND expires_at>now()",
+            [hash(tokenStr)]
+          )
+        ).rows[0];
 
-    const r = (await c.query<{ id: string; status: string }>('SELECT * FROM rooms WHERE id=$1', [inv.room_id]))
+    if (!inv) return fail(400, 'Undangan sudah dipakai, ditolak, dibatalkan, atau kedaluwarsa.');
+
+    // Jika undangan ditujukan spesifik ke email tertentu, pastikan cocok dengan akun ini
+    if (inv.invitee_id && inv.invitee_id !== u.id && inv.invitee_email?.toLowerCase() !== u.email.toLowerCase()) {
+      fail(403, 'Undangan ini ditujukan untuk pengguna lain.');
+    }
+
+    const r = (await c.query<{ id: string; status: string; title: string }>('SELECT * FROM rooms WHERE id=$1', [inv.room_id]))
       .rows[0];
     const members = (
       await c.query<{ id: string; username: string }>(
@@ -466,7 +580,7 @@ export async function handleInviteAccept(
     ).rows;
 
     if (r.status !== 'active' || members.length !== 1 || members[0].id === u.id) {
-      fail(409, 'Undangan tidak dapat diterima.');
+      fail(409, 'Undangan tidak dapat diterima (ruang sudah penuh, tidak aktif, atau milikmu sendiri).');
     }
 
     const key = pairKey(members[0].username, u.username);
@@ -477,7 +591,16 @@ export async function handleInviteAccept(
 
     await c.query("INSERT INTO memberships VALUES($1, $2, 'active')", [r.id, u.id]);
     await c.query('UPDATE rooms SET pair_key=$1 WHERE id=$2', [key, r.id]);
-    await c.query('UPDATE invitations SET used=true WHERE room_id=$1', [r.id]);
+    await c.query("UPDATE invitations SET status='accepted', used=true, responded_at=now(), invitee_id=$1 WHERE id=$2", [u.id, inv.id]);
+
+    // Batalkan semua undangan lain untuk room ini
+    await c.query("UPDATE invitations SET status='cancelled', used=true WHERE room_id=$1 AND id!=$2", [r.id, inv.id]);
+
+    // Hole: Batalkan undangan pending lainnya yang melibatkan User B (baik sebagai pengirim atau penerima)
+    await c.query(
+      "UPDATE invitations SET status='cancelled', used=true WHERE (created_by=$1 OR invitee_id=$1 OR lower(invitee_email)=lower($2)) AND status='pending'",
+      [u.id, u.email]
+    );
 
     const planned = (
       await c.query<{ id: string; room_id: string; scheduled_at: string }>(
@@ -487,7 +610,81 @@ export async function handleInviteAccept(
     ).rows;
     for (const p of planned) await queuePlace(c, p);
 
+    // Kirim notifikasi sukses ke User A (pembuat ruang)
+    await c.query('INSERT INTO notifications(id, user_id, message) VALUES($1, $2, $3)', [
+      randomUUID(),
+      members[0].id,
+      `${u.username} telah menerima undanganmu! Kalian sekarang berada di ruang "${r.title}".`
+    ]);
+
     return { id: r.id };
+  });
+}
+
+export async function handleInviteReject(
+  cookieHeader: string | null | undefined,
+  b: Record<string, unknown>
+): Promise<{ ok: true }> {
+  const u = await getAuthUser(cookieHeader);
+  const inviteId = b.inviteId ? String(b.inviteId) : '';
+  const tokenStr = b.token ? String(b.token) : '';
+
+  if (!inviteId && !tokenStr) fail(400, 'ID undangan diperlukan.');
+
+  return roomTx(async c => {
+    const inv = inviteId
+      ? (
+          await c.query<{ id: string; room_id: string; created_by: string; invitee_id: string | null; invitee_email: string | null }>(
+            "SELECT * FROM invitations WHERE id=$1 AND status='pending' AND used=false AND expires_at>now()",
+            [validateUuid(inviteId)]
+          )
+        ).rows[0]
+      : (
+          await c.query<{ id: string; room_id: string; created_by: string; invitee_id: string | null; invitee_email: string | null }>(
+            "SELECT * FROM invitations WHERE token_hash=$1 AND status='pending' AND used=false AND expires_at>now()",
+            [hash(tokenStr)]
+          )
+        ).rows[0];
+
+    if (!inv) return fail(400, 'Undangan tidak ditemukan atau sudah tidak berlaku.');
+
+    if (inv.invitee_id && inv.invitee_id !== u.id && inv.invitee_email?.toLowerCase() !== u.email.toLowerCase()) {
+      fail(403, 'Undangan ini bukan untuk akunmu.');
+    }
+
+    // Tandai ditolak
+    await c.query(
+      "UPDATE invitations SET status='rejected', used=true, responded_at=now(), invitee_id=$1 WHERE id=$2",
+      [u.id, inv.id]
+    );
+
+    const room = (await c.query<{ title: string }>('SELECT title FROM rooms WHERE id=$1', [inv.room_id])).rows[0];
+
+    // Notifikasi penolakan ke User A (Kebutuhan #7: jika di tolak maka user A mendapatkan notif penolakan dari user B)
+    await c.query('INSERT INTO notifications(id, user_id, message) VALUES($1, $2, $3)', [
+      randomUUID(),
+      inv.created_by,
+      `${u.username} menolak undangan untuk bergabung ke ruang "${room?.title || 'kalian'}". Kamu dapat mengundang pengguna lain.`
+    ]);
+
+    return { ok: true };
+  });
+}
+
+export async function handleInviteCancel(
+  cookieHeader: string | null | undefined,
+  b: Record<string, unknown>
+): Promise<{ ok: true }> {
+  const u = await getAuthUser(cookieHeader);
+  const roomId = validateUuid(b.roomId);
+
+  return roomTx(async c => {
+    await roomAccess(c, u, roomId, true);
+    await c.query(
+      "UPDATE invitations SET status='cancelled', used=true, responded_at=now() WHERE room_id=$1 AND created_by=$2 AND status='pending'",
+      [roomId, u.id]
+    );
+    return { ok: true };
   });
 }
 

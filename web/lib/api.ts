@@ -31,8 +31,13 @@ export const api = {
   roomProfile: (roomId: string, title: string, anniversary: string) =>
     request<{ok: true}>('/rooms/profile', {roomId, title, anniversary}),
   leave: (roomId: string) => request<{ok: true}>('/rooms/leave', {roomId, confirm: true}),
-  invite: (roomId: string) => request<Invitation>('/invites/create', {roomId}),
-  accept: (token: string) => request<{id: string}>('/invites/accept', {token}),
+  invite: (roomId: string, email?: string) => request<Invitation>('/invites/create', {roomId, email}),
+  accept: (param: {token?: string; inviteId?: string} | string) => {
+    const body = typeof param === 'string' ? {token: param} : param;
+    return request<{id: string}>('/invites/accept', body);
+  },
+  reject: (param: {inviteId?: string; token?: string}) => request<{ok: true}>('/invites/reject', param),
+  cancelInvite: (roomId: string) => request<{ok: true}>('/invites/cancel', {roomId}),
   savePlace: (roomId: string, value: PlaceDraft, id?: string) =>
     request<{id: string}>('/places/save', {...value, roomId, id}),
   placeAction: (roomId: string, id: string, action: PlaceAction, at?: string) =>

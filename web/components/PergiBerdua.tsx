@@ -89,7 +89,15 @@ export default function PergiBerdua() {
     });},
     placeAction:(id,action,at)=>{void run(async()=>{await api.placeAction(roomId(),id,action,at);await updated(action==='visited'?'Satu wishlist jadi kenangan.':action==='schedule'?'Rencana tersimpan. Pengingat dijadwalkan.':'Wishlist diperbarui.');});},
     leave:(id)=>{void run(async()=>{await api.leave(id);await updated('Kamu sudah keluar. Akun individualmu tetap aktif.',null);});},
-    join:(value)=>{try{const token=invitationToken(value);setPending(token);savePending(token);setModal(null);setError('');}catch(e){setError(e instanceof Error?e.message:'Undangan tidak valid.');}}
+    join:(value)=>{try{const token=invitationToken(value);setPending(token);savePending(token);setModal(null);setError('');}catch(e){setError(e instanceof Error?e.message:'Undangan tidak valid.');}},
+    inviteEmail:(email)=>{void run(async()=>{
+      const inv = await api.invite(roomId(), email);
+      await updated(`Undangan terkirim ke ${inv.email || email}. Menunggu konfirmasi pasangan.`);
+    });},
+    cancelInvite:(rId)=>{void run(async()=>{
+      await api.cancelInvite(rId);
+      await updated('Undangan pasangan dibatalkan.');
+    });}
   };
   if(fatal)return <main className="loading"><div><h1>Belum bisa tersambung.</h1><p role="alert">{fatal}</p><button className="primary" onClick={()=>location.reload()}>Coba lagi</button></div></main>;
   if(!ready||!config)return <main className="loading" role="status">Menyiapkan ruang berdua…</main>;
@@ -101,7 +109,10 @@ export default function PergiBerdua() {
       logout={()=>{void run(async()=>{await api.logout();setMe(null);setData(null);current.current=null;setTab('wishlist');setModal(null);});}}
       acceptInvite={()=>{void run(async()=>{const r=await api.accept(pending);setPending('');savePending('');setTab('wishlist');await updated('Kalian sekarang satu ruang.',r.id);});}}
       dismissInvite={()=>{setPending('');savePending('');}}
-      createInvite={()=>{void run(async()=>{const invitation=await api.invite(roomId());open({kind:'invite',invitation});});}}
+      createInvite={()=>{open({kind:'invite', roomId: roomId(), outgoingInvite: data?.outgoingInvite});}}
+      cancelInvite={()=>{void run(async()=>{await api.cancelInvite(roomId());await updated('Undangan pasangan dibatalkan.');});}}
+      acceptIncoming={(inviteId)=>{void run(async()=>{const r=await api.accept({inviteId});await updated('Selamat! Kalian sekarang berada di ruang yang sama.', r.id);});}}
+      rejectIncoming={(inviteId)=>{void run(async()=>{await api.reject({inviteId});await updated('Undangan telah ditolak.');});}}
       setReminder={enabled=>{void run(async()=>{await api.preferences(enabled);await load();notify('Preferensi tersimpan.');});}}
       refresh={()=>{void run(()=>load());}}
     /> : <AuthScreen config={config} pendingInvite={pending} onAuthenticated={()=>load(null)}/>}
