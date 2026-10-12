@@ -16,11 +16,18 @@ function getPool(): Pool {
   let pool: Pool;
 
   if (connectionString) {
-    const isLocalhost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+    const isLocal =
+      connectionString.includes('localhost') ||
+      connectionString.includes('127.0.0.1') ||
+      connectionString.includes('@db:') ||
+      connectionString.includes('@postgres:');
+    const useSsl =
+      process.env.DB_SSL === 'true' ||
+      (process.env.APP_MODE === 'production' && !isLocal && process.env.DB_SSL !== 'false');
     pool = new Pool({
       connectionString,
       max: Number(process.env.DB_POOL_MAX || 10),
-      ssl: isLocalhost ? false : { rejectUnauthorized: false }
+      ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {})
     });
   } else {
     pool = new Pool({

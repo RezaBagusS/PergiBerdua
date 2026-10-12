@@ -183,7 +183,7 @@ async function handleInternal(
     const e = err as { status?: number; code?: string; message?: string; name?: string };
     const status = isApiError && typeof e.status === 'number' ? e.status : e.code === '23505' ? 409 : 500;
     if (status === 500) {
-      console.error('API execution error:', e.code || e.name || err);
+      console.error('API execution error:', e.message || e.code || e.name || err);
     }
     const message =
       status === 500
