@@ -76,8 +76,8 @@ Fitur pembuatan ruang privat kencan, undang pasangan via email terdaftar, terima
 - [ ] **TC-ROOM-06 (User B Menolak Undangan):** User B mengklik *Tolak undangan*. Undangan dibatalkan dan banner undangan masuk hilang dari layar User B.
 - [ ] **TC-ROOM-07 (User A Menerima Notifikasi Penolakan):** Saat undangan ditolak oleh User B, User A otomatis mendapatkan notifikasi di beranda: *"[User B] menolak undangan untuk bergabung ke ruang... Kamu dapat mengundang pengguna lain."*
 - [ ] **TC-ROOM-08 (Batalkan Undangan Sebelum Ditanggapi):** User A dapat membatalkan undangan yang sedang pending kapan saja dengan menekan tombol *Batalkan undangan*.
-- [ ] **TC-ROOM-09 (Keluar dari Ruang Pasangan):** Salah satu anggota memilih *Keluar dari ruang pasangan*. Status keanggotaan diperbarui menjadi `left`.
-- [ ] **TC-ROOM-10 (Arsip Ruang Readonly):** Ruang yang ditinggalkan berubah status menjadi arsip readonly, data riwayat tetap tersimpan tanpa bisa diubah kembali secara aktif.
+- [ ] **TC-ROOM-09 (Hapus Ruang Solo Tanpa Pasangan):** Jika User A keluar saat masih sendirian (belum pernah ada pasangan yang masuk/bergabung), ruangan beserta seluruh isinya langsung dihapus seutuhnya dari database (bukan diarsipkan). User A kembali ke status awal tanpa riwayat ruang dan bebas membuat ruang baru dari nol.
+- [ ] **TC-ROOM-10 (Keluar Saat Sudah Berpasangan):** Jika salah satu pasangan keluar dari ruang yang sudah berpasangan, status ruang diubah menjadi arsip hanya-baca (`archived`) untuk pasangan yang ditinggalkan, notifikasi dikirimkan, dan antrean pengingat dibatalkan.
 
 #### Skenario Negatif (-)
 - [ ] **TC-ROOM-11 (Email Pasangan Belum Terdaftar):** User A mengundang email yang belum memiliki akun PergiBerdua. Sistem menolak dengan pesan error: *"Email belum terdaftar sebagai pengguna PergiBerdua. Minta pasanganmu membuat akun terlebih dahulu."*

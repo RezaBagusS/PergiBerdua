@@ -368,6 +368,27 @@ export async function handleRoomLeave(
     const roomId = validateUuid(b.roomId);
     await roomAccess(c, u, roomId, true);
 
+    // Cek apakah pernah ada pasangan yang bergabung ke ruangan ini
+    const membersCount = await c.query<{ n: number }>(
+      'SELECT count(*)::int AS n FROM memberships WHERE room_id=$1',
+      [roomId]
+    );
+    const roomInfo = (await c.query<{ pair_key: string | null }>('SELECT pair_key FROM rooms WHERE id=$1', [roomId])).rows[0];
+
+    const hasEverPaired = (membersCount.rows[0]?.n ?? 0) >= 2 || (roomInfo && roomInfo.pair_key !== null);
+
+    if (!hasEverPaired) {
+      // Skenario 3A: User A masih sendirian tanpa ada pasangan yang pernah bergabung.
+      // Hapus total ruangan beserta datanya, anggap user A tidak pernah membuat ruangan tersebut.
+      await c.query('DELETE FROM mail_jobs WHERE room_id=$1', [roomId]);
+      await c.query('DELETE FROM places WHERE room_id=$1', [roomId]);
+      await c.query('DELETE FROM invitations WHERE room_id=$1', [roomId]);
+      await c.query('DELETE FROM memberships WHERE room_id=$1', [roomId]);
+      await c.query('DELETE FROM rooms WHERE id=$1', [roomId]);
+      return { ok: true };
+    }
+
+    // Skenario 3B: Sudah pernah berpasangan (Arsipkan ruangan untuk pasangan yang ditinggalkan)
     await c.query("UPDATE memberships SET state='left' WHERE room_id=$1 AND user_id=$2", [roomId, u.id]);
     await c.query("UPDATE memberships SET state='archived' WHERE room_id=$1 AND state='active'", [roomId]);
     await c.query("UPDATE rooms SET status='archived', archived_at=now() WHERE id=$1", [roomId]);

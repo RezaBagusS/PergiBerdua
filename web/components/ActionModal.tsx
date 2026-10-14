@@ -102,10 +102,22 @@ export default function ActionModal({modal,busy,error,readonly,close,open,action
       content = <><p>Masukkan tautan atau kode dari pasanganmu. Kamu akan diminta mengonfirmasi sebelum bergabung.</p><form onSubmit={submit(f => actions.join(field(f,'token')))}><label>Undangan<textarea name="token" required maxLength={400} disabled={busy}/></label><button className="primary" disabled={busy}>Periksa undangan →</button></form></>; break;
     }
     case 'leave': {
-      title = 'Keluar dari ruang pasangan?';
-      content = <><div className="notice">Aksesmu ke wishlist dan kenangan di ruang ini langsung dicabut. Data tidak ikut ke ruang baru. Anggota yang tinggal mendapat arsip hanya-baca dan pemberitahuan.</div>
-        <p>Undangan dan pengingat lama dibatalkan. Tidak perlu persetujuan pasangan. Akses lama tidak dapat dipulihkan melalui aplikasi saat ini.</p>
-        <button className="danger-button" disabled={busy} onClick={() => actions.leave(modal.room.id)}>Saya paham, keluar dari ruang</button><button className="secondary" disabled={busy} onClick={close}>Tetap di ruang ini</button></>; break;
+      if (modal.solo) {
+        title = 'Batalkan & hapus ruang?';
+        content = <>
+          <div className="notice">
+            Pasangan belum pernah bergabung ke ruang ini. Jika kamu keluar sekarang, ruang ini akan dihapus seutuhnya dan kamu dapat memulai membuat ruang baru kapan saja.
+          </div>
+          <button className="danger-button" disabled={busy} onClick={() => actions.leave(modal.room.id)}>Ya, hapus ruang ini</button>
+          <button className="secondary" disabled={busy} onClick={close}>Tetap di ruang ini</button>
+        </>;
+      } else {
+        title = 'Keluar dari ruang pasangan?';
+        content = <><div className="notice">Aksesmu ke wishlist dan kenangan di ruang ini langsung dicabut. Data tidak ikut ke ruang baru. Anggota yang tinggal mendapat arsip hanya-baca dan pemberitahuan.</div>
+          <p>Undangan dan pengingat lama dibatalkan. Tidak perlu persetujuan pasangan. Akses lama tidak dapat dipulihkan melalui aplikasi saat ini.</p>
+          <button className="danger-button" disabled={busy} onClick={() => actions.leave(modal.room.id)}>Saya paham, keluar dari ruang</button><button className="secondary" disabled={busy} onClick={close}>Tetap di ruang ini</button></>;
+      }
+      break;
     }
   }
   return <Modal title={title} busy={busy} error={error} onClose={close}>{content}</Modal>;

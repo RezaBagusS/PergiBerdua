@@ -128,4 +128,26 @@ test('email-based invitation flow with accept, reject, notice, and hole protecti
   const invFull = await a('/invites/create', { roomId, email: `user_c_${id}@example.com` });
   assert.equal(invFull.status, 409);
   assert.match(invFull.error, /Ruang sudah berisi dua anggota/);
+
+  // Skenario 3A: User C membuat ruang sendiri lalu langsung keluar tanpa pasangan pernah masuk
+  const roomCRes = await c('/rooms/create', { title: 'Ruang Solo ' + id });
+  assert.equal(roomCRes.status, 200);
+  const roomCId = roomCRes.id;
+
+  // Pastikan ruang C tercatat di profil User C
+  const meCBef = await c('/me', null, 'GET');
+  assert.equal(meCBef.rooms.length, 1);
+  assert.equal(meCBef.rooms[0].id, roomCId);
+
+  // User C keluar saat masih sendirian
+  const leaveC = await c('/rooms/leave', { roomId: roomCId, confirm: true });
+  assert.equal(leaveC.status, 200);
+
+  // Pastikan ruangan C dihapus seutuhnya (bukan diarsipkan) dan User C tidak punya riwayat ruang sama sekali
+  const meCAft = await c('/me', null, 'GET');
+  assert.equal(meCAft.rooms.length, 0);
+
+  // User C bisa langsung membuat ruang baru lagi tanpa halangan
+  const newRoomC = await c('/rooms/create', { title: 'Ruang Baru C ' + id });
+  assert.equal(newRoomC.status, 200);
 });

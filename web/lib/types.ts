@@ -70,4 +70,4 @@ export type ModalState =
   | {kind: 'room-profile'; room?: Room}
   | {kind: 'invite'; roomId: string; outgoingInvite?: OutgoingInvite | null}
   | {kind: 'join'}
-  | {kind: 'leave'; room: Room};
+  | {kind: 'leave'; room: Room; solo?: boolean};

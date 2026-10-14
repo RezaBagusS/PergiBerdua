@@ -165,7 +165,7 @@ function Account({me,data,busy,open,createInvite,cancelInvite,setReminder,refres
                 <button className="primary" disabled={busy} onClick={createInvite}>Undang pasangan via email</button>
               )
             )}
-            <button className="danger-outline" disabled={busy} onClick={() => open({kind:'leave',room:r})}>Keluar dari ruang pasangan</button>
+            <button className="danger-outline" disabled={busy} onClick={() => open({kind:'leave',room:r,solo:data.members.length < 2})}>{data.members.length < 2 ? 'Hapus ruang ini' : 'Keluar dari ruang pasangan'}</button>
           </div>}</> : <p>Satu ruang aktif per akun. Arsip lama tidak dihitung sebagai ruang aktif.</p>}
         {!me.rooms.some(r => r.status === 'active') && <div className="button-stack"><button className="primary" disabled={busy} onClick={() => open({kind:'room-profile'})}>Buat ruang baru</button><button className="secondary" disabled={busy} onClick={() => open({kind:'join'})}>Masukkan kode undangan</button></div>}
       </section>
